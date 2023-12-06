@@ -1,9 +1,11 @@
 import sys
 import subprocess
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox, QFileDialog
+import threading
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox, QFileDialog, QTabWidget
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import QTimer, Qt
 from PIL import Image
+
 
 class ADBApp(QWidget):
     def __init__(self):
@@ -19,23 +21,27 @@ class ADBApp(QWidget):
     def init_ui(self):
         self.setWindowTitle('ADB 스크린샷 슈터 v1.0.0')
         self.setFixedSize(1280, 900)  # 윈도우 최대 크기 고정
-
+        # UI 버튼 정의
         self.device_status_label = QLabel('ADB 연결상태 : Not Connected')
         self.screenshot_label = QLabel('스크린샷 위치')
         self.screenshot_button = QPushButton('스크린샷 찍기')
         self.save_button = QPushButton('다른이름으로 저장')
         self.restart_adb_button = QPushButton('ADB 재시작')
-
+        self.open_settings_button = QPushButton('안드로이드 Setting 앱 열기')
+        # 레이아웃
         layout = QVBoxLayout()
         layout.addWidget(self.device_status_label)
         layout.addWidget(self.screenshot_label)
         layout.addWidget(self.screenshot_button)
         layout.addWidget(self.save_button)
         layout.addWidget(self.restart_adb_button)
+        layout.addWidget(self.open_settings_button)
 
+        # 클릭 이벤트
         self.screenshot_button.clicked.connect(self.take_screenshot)
         self.save_button.clicked.connect(self.save_screenshot)
         self.restart_adb_button.clicked.connect(self.restart_adb)
+        self.open_settings_button.clicked.connect(self.open_settings)
 
         self.setLayout(layout)
 
@@ -85,7 +91,6 @@ class ADBApp(QWidget):
         self.screenshot_label.setPixmap(pixmap)
         self.screenshot_label.setAlignment(Qt.AlignCenter)  # 이미지를 가운데 정렬
 
-
         # 상태 업데이트
         self.device_status_label.setText('ADB 상태: Connected')
 
@@ -107,6 +112,14 @@ class ADBApp(QWidget):
         except Exception as e:
             self.show_message('Error', f'Error saving screenshot: {str(e)}')
 
+    def open_settings(self):
+        try:
+            subprocess.run(['adb', 'shell', 'am', 'start', '-n', 'com.android.settings/com.android.settings.Settings'],
+                           check=True)
+            self.show_message('Success', 'Settings opened successfully.')
+        except subprocess.CalledProcessError:
+            self.show_message('Error', 'Error while opening Settings.')
+
     def restart_adb(self):
         try:
             subprocess.run(['adb', 'kill-server'], check=True)
@@ -120,6 +133,7 @@ class ADBApp(QWidget):
         msg_box.setWindowTitle(title)
         msg_box.setText(message)
         msg_box.exec_()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
